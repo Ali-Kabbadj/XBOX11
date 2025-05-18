@@ -14,7 +14,8 @@
       {
         "title": "xbox11",
         "width": 800,
-        "height": 600
+        "height": 600,
+        "devtools": true
       }
     ],
     "security": {
@@ -22,8 +23,12 @@
     }
   },
   "plugins": {
-    "gamepad": {}
+    "gamepad": {},
+    "shell": {
+      "open": true
+    }
   },
+
   "bundle": {
     "active": true,
     "targets": "all",

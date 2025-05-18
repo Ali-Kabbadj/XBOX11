@@ -15,6 +15,8 @@ use tauri::{
     AppHandle, Runtime, Window,
 };
 
+use log::info;
+
 mod utils;
 use crate::utils::{axis_from_u16, button_from_u16};
 
@@ -69,8 +71,8 @@ fn gamepad_to_json(gamepad: Gamepad, event: EventType, time: SystemTime) -> Valu
         "mapping": mapping,
         "power_info": format!("{:?}",power_info),
     });
-
-    println!("{}", serde_json::to_string_pretty(&json).unwrap());
+    info!("{}", serde_json::to_string_pretty(&json).unwrap());
+    // println!("{}", serde_json::to_string_pretty(&json).unwrap());
 
     json
 }
@@ -97,6 +99,7 @@ async fn execute<R: Runtime>(app: AppHandle<R>, _window: Window<R>) {
 
 /// Initializes the plugin.
 pub fn init<R: Runtime>() -> TauriPlugin<R> {
+    info!("plugin initialized");
     Builder::new("gamepad")
         .invoke_handler(tauri::generate_handler![execute])
         .build()

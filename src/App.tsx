@@ -18,11 +18,19 @@ import { GamepadProvider } from "./contexts/gamepad/GamepadContext";
 import { useEffect, useState } from "react";
 import { Sections } from "./tempDATA";
 
+type Game = {
+  id: string;
+  title: string;
+  icon: string;
+  bgColor: string;
+} | null;
+
 // Main App Component
 export default function App() {
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
+  const [currentGame, setCurrentGame] = useState<Game>(null);
 
   // Handle gamepad actions
   const handleAction = (action: GamepadAction, itemId: string) => {
@@ -59,12 +67,13 @@ export default function App() {
     setBackgroundImage(
       "linear-gradient(to bottom, rgba(0,0,15,0.8) 0%, rgba(0,0,20,0.9) 100%)",
     );
+    const game = Sections.flatMap((section) => section.items).find(
+      (item) => item.id === selectedItem,
+    );
+    if (game) setCurrentGame(game);
   }, [selectedItem]);
 
   // Get the currently selected game if any
-  const currentGame = Sections.flatMap((section) => section.items).find(
-    (item) => item.id === selectedItem,
-  );
 
   return (
     <GamepadProvider>
