@@ -1,3 +1,4 @@
+use flexi_logger::{Duplicate, FileSpec, Logger};
 use log::info;
 use tauri::Manager;
 
@@ -9,8 +10,32 @@ fn greet(name: &str) -> String {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    env_logger::init();
-    info!("Host app starting…");
+    // enable webview debug and attach port
+    std::env::set_var(
+        "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS",
+        "--remote-debugging-port=9222",
+    );
+    // logoer Build & start the logger
+    let logger =
+        Logger::try_with_str("info").unwrap_or_else(|e| panic!("Failed to parse log spec: {}", e));
+
+    let logger = logger
+        .log_to_file(
+            FileSpec::default()
+                .basename("xbox11")
+                .suffix("log")
+                .directory("logs")
+                .suppress_timestamp(),
+        )
+        .append()
+        .duplicate_to_stderr(Duplicate::Info);
+
+    logger
+        .start()
+        .unwrap_or_else(|e| panic!("Failed to initialize logger: {}", e));
+
+    info!("HELL YEAH ITS WORKING!!");
+
     let mut builder = tauri::Builder::default();
 
     // Enable devtools for debugging

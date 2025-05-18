@@ -47,7 +47,66 @@
     },
     {
       "label": "ui:dev&core:buildDebug",
-      "dependsOn": ["core:buildDebug", "ui:dev"]
+      "dependsOn": ["core:buildDebug", "ui:dev"],
+      "dependsOrder": "sequence"
+    },
+    {
+      "label": "stop_debug_sessions",
+      "type": "shell",
+      "windows": {
+        "command": "powershell",
+        "args": [
+          "-Command",
+          "Get-Process -Name 'node' | Where-Object { $_.Id -ne $null } | Stop-Process -Force; Write-Host 'Terminated Node.js processes'"
+        ]
+      },
+      "linux": {
+        "command": "bash",
+        "args": [
+          "-c",
+          "killall node 2>/dev/null || true; echo 'Terminated Node.js processes'"
+        ]
+      },
+      "osx": {
+        "command": "bash",
+        "args": [
+          "-c",
+          "killall node 2>/dev/null || true; echo 'Terminated Node.js processes'"
+        ]
+      },
+      "presentation": {
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "wait_for_debug_port",
+      "type": "shell",
+      "windows": {
+        "command": "powershell",
+        "args": [
+          "-Command",
+          "for ($i = 1; $i -le 10; $i++) { if (Test-NetConnection -ComputerName localhost -Port 9222 -InformationLevel Quiet) { exit 0 } else { Write-Host \"Waiting for debug port (attempt $i)...\"; Start-Sleep -Seconds 1 } }; exit 1"
+        ]
+      },
+      "linux": {
+        "command": "bash",
+        "args": [
+          "-c",
+          "for i in {1..10}; do if nc -z localhost 9222; then exit 0; else echo \"Waiting for debug port (attempt $i)...\"; sleep 1; fi; done; exit 1"
+        ]
+      },
+      "osx": {
+        "command": "bash",
+        "args": [
+          "-c",
+          "for i in {1..10}; do if nc -z localhost 9222; then exit 0; else echo \"Waiting for debug port (attempt $i)...\"; sleep 1; fi; done; exit 1"
+        ]
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
     }
   ]
 }

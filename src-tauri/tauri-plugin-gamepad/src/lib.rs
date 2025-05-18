@@ -1,3 +1,4 @@
+use log::info;
 use tauri::{Emitter, EventTarget};
 
 use gilrs::{Event, EventType, Gamepad, Gilrs, MappingSource};
@@ -14,8 +15,6 @@ use tauri::{
     plugin::{Builder, TauriPlugin},
     AppHandle, Runtime, Window,
 };
-
-use log::info;
 
 mod utils;
 use crate::utils::{axis_from_u16, button_from_u16};
@@ -99,7 +98,6 @@ async fn execute<R: Runtime>(app: AppHandle<R>, _window: Window<R>) {
 
 /// Initializes the plugin.
 pub fn init<R: Runtime>() -> TauriPlugin<R> {
-    info!("plugin initialized");
     Builder::new("gamepad")
         .invoke_handler(tauri::generate_handler![execute])
         .build()

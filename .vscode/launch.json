@@ -2,30 +2,46 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "type": "lldb",
+      "name": "Full App (Rust Debug)",
+      "type": "cppvsdbg",
       "request": "launch",
-      "name": "Tauri Core Development",
-      "env": { "RUST_LOG": "info" },
-      "cargo": {
-        "args": [
-          "build",
-          "--manifest-path=./src-tauri/Cargo.toml",
-          "--no-default-features"
-        ]
-      },
-      "preLaunchTask": "ui:dev",
-      // Use the VS Code Integrated Terminal for program I/O
-      "terminal": "integrated"
+      "program": "${workspaceFolder}/src-tauri/target/debug/xbox11.exe",
+      "cwd": "${workspaceRoot}",
+      "args": ["--remote-debugging-port=9222"],
+      "preLaunchTask": "ui:dev&core:buildDebug",
+      "postDebugTask": "stop_debug_sessions",
+      "internalConsoleOptions": "neverOpen"
     },
     {
-      // this configuration works only on Windows
-      "name": "Tauri Frontend (Windows)",
+      "name": "Frontend Debugger (Attach)",
       "type": "msedge",
-      "request": "launch",
-      "runtimeExecutable": "${workspaceFolder}/src-tauri/target/debug/xbox11.exe",
-      "useWebView": true,
+      "request": "attach",
+      "port": 9222,
       "webRoot": "${workspaceFolder}",
-      "preLaunchTask": "ui:dev&core:buildDebug"
+      "sourceMaps": true,
+      "timeout": 30000,
+      "restart": true,
+      "trace": true,
+      "presentation": {
+        "hidden": true
+      },
+      "preLaunchTask": "wait_for_debug_port"
+    }
+    // {
+    //   "name": "Backend Only (Rust)",
+    //   "type": "cppvsdbg",
+    //   "request": "launch",
+    //   "program": "${workspaceFolder}/src-tauri/target/debug/xbox11.exe",
+    //   "cwd": "${workspaceRoot}",
+    //   "preLaunchTask": "core:buildDebug"
+    // }
+  ],
+  "compounds": [
+    {
+      "name": "Full Debug (Rust + Typescript)",
+      "configurations": ["Full App (Rust Debug)", "Frontend Debugger (Attach)"],
+      "stopAll": true,
+      "preLaunchTask": ""
     }
   ]
 }
