@@ -1,11 +1,8 @@
-import {
-  Navigable,
-  NavigationGroup,
-} from "@/contexts/gamepad/NavigationSystem";
-import React, { ReactNode } from "react";
+import { useNavigation } from "@/contexts/gamepad/NavigationSystem";
+import React, { ReactNode, useEffect, useRef } from "react";
 
-// PS5-inspired UI styles
-const ps5Styles = {
+// -inspired UI styles
+const Styles = {
   // Container styles
   container: `
     text-white py-4 transition-all duration-300
@@ -69,23 +66,148 @@ interface StyledNavigationGroupProps {
   title?: string;
 }
 
+// Component for navigable items
+interface NavigableProps {
+  id: string;
+  parentId?: string | null;
+  disabled?: boolean;
+  className?: string;
+  activeClassName?: string;
+  childActiveClassName?: string;
+  children: ReactNode;
+  onClick?: () => void;
+  [key: string]: any; // Allow other props to pass through
+}
+
+// In NavigationSystem.tsx
+export const Navigable: React.FC<NavigableProps> = ({
+  id,
+  parentId = null,
+  disabled = false,
+  className = "",
+  activeClassName = "navigable-active",
+  childActiveClassName = "navigable-child-active",
+  children,
+  onClick,
+  ...rest
+}) => {
+  const { registerItem, unregisterItem, isActive, isChildActive, focusItem } =
+    useNavigation();
+
+  const ref = useRef<HTMLDivElement>(null);
+  const registeredRef = useRef(false);
+
+  // Register this item on mount
+  useEffect(() => {
+    if (!registeredRef.current) {
+      registerItem(id, ref, parentId, disabled);
+      registeredRef.current = true;
+    }
+
+    return () => {
+      unregisterItem(id);
+      registeredRef.current = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, parentId, disabled]);
+
+  // Update registration if props change
+  useEffect(() => {
+    if (registeredRef.current) {
+      unregisterItem(id);
+      registerItem(id, ref, parentId, disabled);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [disabled, parentId]);
+
+  // Handle click to focus this item
+  const handleClick = () => {
+    if (!disabled) {
+      focusItem(id);
+      if (onClick) onClick();
+    }
+  };
+
+  // Compute className
+  const isActiveValue = isActive(id);
+  const isChildActiveValue = isChildActive(id);
+
+  // Build the className dynamically
+  const computedClassName = `
+    ${className}
+    ${isActiveValue ? activeClassName : ""}
+    ${isChildActiveValue ? childActiveClassName : ""}
+  `.trim();
+
+  return (
+    <div
+      ref={ref}
+      className={computedClassName}
+      onClick={handleClick}
+      data-navigable-id={id}
+      data-navigable-active={isActiveValue}
+      data-navigable-child-active={isChildActiveValue}
+      data-navigable-disabled={disabled}
+      tabIndex={isActiveValue ? 0 : -1}
+      {...rest}
+    >
+      {children}
+    </div>
+  );
+};
+
+// Navigation group component
+interface NavigationGroupProps {
+  id: string;
+  parentId?: string | null;
+  className?: string;
+  activeClassName?: string;
+  childActiveClassName?: string;
+  children: ReactNode;
+  [key: string]: any; // Allow other props to pass through
+}
+
+export const NavigationGroup: React.FC<NavigationGroupProps> = ({
+  id,
+  parentId = null,
+  className = "",
+  activeClassName = "navigation-group-active",
+  childActiveClassName = "navigation-group-child-active",
+  children,
+  ...rest
+}) => {
+  // Group is never disabled
+  return (
+    <Navigable
+      id={id}
+      parentId={parentId}
+      className={className}
+      activeClassName={activeClassName}
+      childActiveClassName={childActiveClassName}
+      {...rest}
+    >
+      {children}
+    </Navigable>
+  );
+};
+
 // Styled Components
 export const NavigationContainer: React.FC<StyledNavigationGroupProps> = ({
   id,
   parentId = null,
   children,
   className = "",
-  title,
+  title = ""
 }) => {
   return (
     <NavigationGroup
       id={id}
       parentId={parentId}
-      className={`${ps5Styles.container} ${className}`}
-      activeClassName={ps5Styles.containerActive}
-      childActiveClassName={ps5Styles.containerChildActive}
+      className={`${Styles.container} ${className}`}
+      activeClassName={Styles.containerActive}
+      childActiveClassName={Styles.containerChildActive}
     >
-      {title && <h2 className={ps5Styles.titleBar}>{title}</h2>}
+      {title && <h2 className={Styles.titleBar}>{title}</h2>}
       {children}
     </NavigationGroup>
   );
@@ -105,11 +227,11 @@ export const NavigationTile: React.FC<StyledNavigableProps> = ({
       parentId={parentId}
       disabled={disabled}
       className={`
-        ${ps5Styles.tile}
+        ${Styles.tile}
         ${className}
-        ${disabled ? ps5Styles.tileDisabled : ""}
+        ${disabled ? Styles.tileDisabled : ""}
       `}
-      activeClassName={ps5Styles.tileActive}
+      activeClassName={Styles.tileActive}
       onClick={onClick}
     >
       {children}
@@ -128,7 +250,7 @@ export const NavigationMenu: React.FC<StyledNavigationGroupProps> = ({
     <NavigationGroup
       id={id}
       parentId={parentId}
-      className={`${ps5Styles.menu} ${className}`}
+      className={`${Styles.menu} ${className}`}
     >
       {title && (
         <div className="px-6 py-3 bg-gray-950 font-medium">{title}</div>
@@ -152,11 +274,11 @@ export const NavigationMenuItem: React.FC<StyledNavigableProps> = ({
       parentId={parentId}
       disabled={disabled}
       className={`
-        ${ps5Styles.menuItem} 
+        ${Styles.menuItem} 
         ${className} 
-        ${disabled ? ps5Styles.tileDisabled : ""}
+        ${disabled ? Styles.tileDisabled : ""}
       `}
-      activeClassName={ps5Styles.menuItemActive}
+      activeClassName={Styles.menuItemActive}
       onClick={onClick}
     >
       {children}
@@ -169,7 +291,7 @@ export const NavigationGrid: React.FC<{
   className?: string;
   columns?: number;
 }> = ({ children, className = "", columns = 5 }) => {
-  // PS5 uses horizontal scrolling rows rather than a grid
+  //  uses horizontal scrolling rows rather than a grid
   return (
     <div className={`flex space-x-6 px-4 overflow-x-visible ${className}`}>
       {children}
@@ -177,7 +299,7 @@ export const NavigationGrid: React.FC<{
   );
 };
 
-// PS5 uses rows for game tiles
+//  uses rows for game tiles
 export const NavigationRow: React.FC<{
   children: ReactNode;
   className?: string;
@@ -194,8 +316,8 @@ export const NavigationColumn: React.FC<{
   );
 };
 
-// New PS5-specific components
-export const PS5Header: React.FC<{
+// Tile header
+export const Header: React.FC<{
   activeSection: string;
   time?: string;
 }> = ({ activeSection, time = "3:40 PM" }) => {
@@ -235,7 +357,8 @@ export const PS5Header: React.FC<{
   );
 };
 
-export const PS5GameTile: React.FC<{
+// selectable navigatiion item
+export const SelectableTile: React.FC<{
   id: string;
   parentId: string;
   title: string;
@@ -256,13 +379,13 @@ export const PS5GameTile: React.FC<{
   );
 };
 
-export const PS5DetailPanel: React.FC<{
+export const DetailPanel: React.FC<{
   title: string;
   subtitle?: string;
   children?: ReactNode;
 }> = ({ title, subtitle, children }) => {
   return (
-    <div className="absolute left-12 bottom-24 max-w-md z-20">
+    <div className="absolute left-12 bottom-h-100 max-w-md z-20">
       <h1 className="text-4xl font-bold mb-2">{title}</h1>
       {subtitle && <div className="text-lg text-gray-300 mb-4">{subtitle}</div>}
       {children}
@@ -270,7 +393,7 @@ export const PS5DetailPanel: React.FC<{
   );
 };
 
-export const PS5ActionButton: React.FC<{
+export const ActionButton: React.FC<{
   label: string;
   onClick?: () => void;
   primary?: boolean;

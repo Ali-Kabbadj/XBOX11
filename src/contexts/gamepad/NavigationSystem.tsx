@@ -8,7 +8,7 @@ import React, {
   RefObject,
   useRef,
 } from "react";
-import { Direction, useGamepad } from "./GamepadContext";
+import { useGamepad } from "./GamepadContext";
 
 // ======= Navigation Types =======
 export interface NavigationItem {
@@ -58,6 +58,10 @@ export enum GamepadAction {
   BACK = 1, // B on Xbox, O on PlayStation
   MENU = 9, // Start button
   OPTION = 8, // Select/Option button
+  UP,
+  LEFT,
+  RIGHT,
+  DOWN,
 }
 
 // ======= Provider Component =======
@@ -66,6 +70,7 @@ interface NavigationProviderProps {
   initialActiveId?: string | null;
   debounceMs?: number;
   onAction?: (action: GamepadAction, itemId: string) => void;
+  onNavigationAction?: (...props: any) => void;
   autoSelectFirstChild?: boolean;
   rememberLastChild?: boolean;
 }
@@ -75,6 +80,7 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({
   initialActiveId = null,
   debounceMs = 150,
   onAction,
+  onNavigationAction,
   autoSelectFirstChild = true,
   rememberLastChild = true,
 }) => {
@@ -92,16 +98,11 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({
   const [rememberLastChildState, setRememberLastChildState] =
     useState(rememberLastChild);
 
-  // Cache for last navigation direction - useful for more intelligent navigation
-  const lastDirectionRef = useRef<Direction | null>(null);
+  // Cache for last navigation direction
+  const lastDirectionRef = useRef<GamepadAction | null>(null);
 
   // Access gamepad context
-  const {
-    connected,
-    getDirectionPressed,
-    wasButtonJustPressed,
-    getButtonPressed,
-  } = useGamepad();
+  const { connected, getActionPressed, getButtonPressed } = useGamepad();
 
   // Register a new navigation item
   const registerItem = useCallback(
@@ -406,12 +407,12 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({
     [items],
   );
 
-  const arraysEqual = (a: string | any[], b: string | any[]) => {
-    if (a.length !== b.length) return false;
-    const sortedA = [...a].sort();
-    const sortedB = [...b].sort();
-    return sortedA.every((val, i) => val === sortedB[i]);
-  };
+  // const arraysEqual = (a: string | any[], b: string | any[]) => {
+  //   if (a.length !== b.length) return false;
+  //   const sortedA = [...a].sort();
+  //   const sortedB = [...b].sort();
+  //   return sortedA.every((val, i) => val === sortedB[i]);
+  // };
 
   // Get all parent items
   const getAllParentItems = useCallback(() => {
@@ -481,7 +482,7 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({
 
   // Find the best sibling item in horizontal navigation (with wraparound)
   const findHorizontalSibling = useCallback(
-    (direction: Direction.LEFT | Direction.RIGHT) => {
+    (direction: GamepadAction.LEFT | GamepadAction.RIGHT) => {
       if (!activeItemId || !items[activeItemId]) return null;
 
       const currentItem = items[activeItemId];
@@ -508,7 +509,7 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({
       if (currentIndex === -1) return null;
 
       let targetIndex;
-      if (direction === Direction.RIGHT) {
+      if (direction === GamepadAction.RIGHT) {
         // Move right (with wraparound)
         targetIndex = (currentIndex + 1) % siblingsWithPos.length;
       } else {
@@ -524,7 +525,7 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({
 
   // Find item in the row above/below that aligns with current column position
   const findVerticalSibling = useCallback(
-    (direction: Direction.UP | Direction.DOWN) => {
+    (direction: GamepadAction.UP | GamepadAction.DOWN) => {
       if (!activeItemId || !items[activeItemId]) return null;
 
       const currentItem = items[activeItemId];
@@ -565,7 +566,7 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({
       }
 
       let targetParentIndex;
-      if (direction === Direction.UP) {
+      if (direction === GamepadAction.UP) {
         // Move up with wraparound
         targetParentIndex =
           (currentParentIndex - 1 + parentRects.length) % parentRects.length;
@@ -646,11 +647,11 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({
     const now = Date.now();
     if (now - lastNavigationTime < debounceMs) return;
 
-    const direction = getDirectionPressed();
-    if (direction === null) return;
+    const action = getActionPressed();
+    if (action === null) return;
 
     // Store the direction for smarter navigation
-    lastDirectionRef.current = direction;
+    lastDirectionRef.current = action;
 
     // Prevent navigation during the first render
     if (!initializedRef.current) {
@@ -660,17 +661,20 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({
 
     // Determine navigation strategy based on direction
     let nextItemId: string | null = null;
-    switch (direction) {
-      case Direction.LEFT:
-      case Direction.RIGHT:
+    switch (action) {
+      case GamepadAction.LEFT:
+      case GamepadAction.RIGHT:
         // Horizontal navigation with wraparound
-        nextItemId = findHorizontalSibling(direction);
+        nextItemId = findHorizontalSibling(action);
+        if (onNavigationAction) {
+          onNavigationAction(action, nextItemId);
+        }
         break;
 
-      case Direction.UP:
-      case Direction.DOWN:
+      case GamepadAction.UP:
+      case GamepadAction.DOWN:
         // Vertical navigation prioritizing column alignment
-        nextItemId = findVerticalSibling(direction);
+        nextItemId = findVerticalSibling(action);
         break;
     }
 
@@ -681,7 +685,7 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({
   }, [
     connected,
     activeItemId,
-    getDirectionPressed,
+    getActionPressed,
     lastNavigationTime,
     debounceMs,
     findHorizontalSibling,
@@ -691,52 +695,33 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({
     focusItem,
   ]);
 
-  // Handle button presses
-  // useEffect(() => {
-  //   if (!connected || !activeItemId || !onAction) return;
-  //   // Check for common action buttons
-  //   Object.values(GamepadAction).forEach((buttonIndex) => {
-  //     if (
-  //       typeof buttonIndex === "number" &&
-  //       wasButtonJustPressed(buttonIndex)
-  //     ) {
-  //       onAction(buttonIndex as GamepadAction, activeItemId);
-  //     }
-  //   });
-  // }, [connected, activeItemId, wasButtonJustPressed, onAction]);
-
+  //Handle button presses
   useEffect(() => {
     if (!connected || !activeItemId || !onAction) {
-      console.log("something is null");
       return;
     }
 
     const action = getButtonPressed();
     if (action != null && action > -1) {
-      console.log(action);
       onAction(action as GamepadAction, activeItemId);
     }
   }, [connected, activeItemId, getButtonPressed, onAction]);
 
   // Make sure a child is always selected on initialization
-
   useEffect(() => {
     // If no item is selected yet, find the first available child
-
     if (activeItemId === null && Object.keys(items).length > 0) {
       // Find all children (items with parents)
-
       const allChildren = Object.values(items).filter(
         (item) => item.parentId !== null && !item.disabled,
       );
 
       if (allChildren.length > 0) {
         // Select the first available child
-
         focusItem(allChildren[0].id);
       }
     }
-  }, [items, activeItemId, focusItem]);
+  }, [items, activeItemId, focusItem, onNavigationAction]);
 
   // Context value
   const contextValue: NavigationContextType = {
@@ -771,129 +756,4 @@ export const useNavigation = () => {
   }
 
   return context;
-};
-
-// Component for navigable items
-interface NavigableProps {
-  id: string;
-  parentId?: string | null;
-  disabled?: boolean;
-  className?: string;
-  activeClassName?: string;
-  childActiveClassName?: string;
-  children: ReactNode;
-  onClick?: () => void;
-  [key: string]: any; // Allow other props to pass through
-}
-
-// In NavigationSystem.tsx
-export const Navigable: React.FC<NavigableProps> = ({
-  id,
-  parentId = null,
-  disabled = false,
-  className = "",
-  activeClassName = "navigable-active",
-  childActiveClassName = "navigable-child-active",
-  children,
-  onClick,
-  ...rest
-}) => {
-  const { registerItem, unregisterItem, isActive, isChildActive, focusItem } =
-    useNavigation();
-
-  const ref = useRef<HTMLDivElement>(null);
-  const registeredRef = useRef(false);
-
-  // Register this item on mount
-  useEffect(() => {
-    if (!registeredRef.current) {
-      registerItem(id, ref, parentId, disabled);
-      registeredRef.current = true;
-    }
-
-    return () => {
-      unregisterItem(id);
-      registeredRef.current = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, parentId, disabled]);
-
-  // Update registration if props change
-  useEffect(() => {
-    if (registeredRef.current) {
-      unregisterItem(id);
-      registerItem(id, ref, parentId, disabled);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [disabled, parentId]);
-
-  // Handle click to focus this item
-  const handleClick = () => {
-    if (!disabled) {
-      focusItem(id);
-      if (onClick) onClick();
-    }
-  };
-
-  // Compute className
-  const isActiveValue = isActive(id);
-  const isChildActiveValue = isChildActive(id);
-
-  // Build the className dynamically
-  const computedClassName = `
-    ${className}
-    ${isActiveValue ? activeClassName : ""}
-    ${isChildActiveValue ? childActiveClassName : ""}
-  `.trim();
-
-  return (
-    <div
-      ref={ref}
-      className={computedClassName}
-      onClick={handleClick}
-      data-navigable-id={id}
-      data-navigable-active={isActiveValue}
-      data-navigable-child-active={isChildActiveValue}
-      data-navigable-disabled={disabled}
-      tabIndex={isActiveValue ? 0 : -1}
-      {...rest}
-    >
-      {children}
-    </div>
-  );
-};
-
-// Navigation group component
-interface NavigationGroupProps {
-  id: string;
-  parentId?: string | null;
-  className?: string;
-  activeClassName?: string;
-  childActiveClassName?: string;
-  children: ReactNode;
-  [key: string]: any; // Allow other props to pass through
-}
-
-export const NavigationGroup: React.FC<NavigationGroupProps> = ({
-  id,
-  parentId = null,
-  className = "",
-  activeClassName = "navigation-group-active",
-  childActiveClassName = "navigation-group-child-active",
-  children,
-  ...rest
-}) => {
-  // Group is never disabled
-  return (
-    <Navigable
-      id={id}
-      parentId={parentId}
-      className={className}
-      activeClassName={activeClassName}
-      childActiveClassName={childActiveClassName}
-      {...rest}
-    >
-      {children}
-    </Navigable>
-  );
 };

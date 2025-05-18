@@ -35,21 +35,6 @@ export interface GamepadState {
   connected: boolean;
 }
 
-// Directions for navigation
-// export enum Direction {
-//   UP,
-//   RIGHT,
-//   DOWN,
-//   LEFT,
-// }
-
-export enum Direction {
-  UP,
-  LEFT,
-  RIGHT,
-  DOWN,
-}
-
 interface GamepadContextType {
   gamepads: Record<number, GamepadState>;
   activeGamepad: GamepadState | null;
@@ -58,8 +43,7 @@ interface GamepadContextType {
   connected: boolean;
   lastButtonPressed: number | null;
   isButtonPressed: (buttonIndex: number) => boolean;
-  wasButtonJustPressed: (buttonIndex: number) => boolean;
-  getDirectionPressed: () => Direction | null;
+  getActionPressed: () => GamepadAction | null;
   getButtonPressed: () => GamepadAction | null;
   axisValues: number[];
 }
@@ -266,23 +250,15 @@ export const GamepadProvider = ({
     [activeGamepad],
   );
 
-  const wasButtonJustPressed = useCallback(
-    (buttonIndex: number): boolean => {
-      if (!activeGamepad || !activeIndex) return false;
-      return justPressedButtons[activeIndex]?.[buttonIndex] || false;
-    },
-    [activeIndex, justPressedButtons],
-  );
-
-  const getDirectionPressed = useCallback((): Direction | null => {
+  const getActionPressed = useCallback((): GamepadAction | null => {
     if (!activeGamepad) return null;
 
     // Check D-pad (assumes standard mapping)
     // Common button mappings for d-pad: 12=up, 13=down, 14=left, 15=right
-    if (isButtonPressed(16)) return Direction.UP;
-    if (isButtonPressed(19)) return Direction.RIGHT;
-    if (isButtonPressed(17)) return Direction.DOWN;
-    if (isButtonPressed(18)) return Direction.LEFT;
+    if (isButtonPressed(16)) return GamepadAction.UP;
+    if (isButtonPressed(19)) return GamepadAction.RIGHT;
+    if (isButtonPressed(17)) return GamepadAction.DOWN;
+    if (isButtonPressed(18)) return GamepadAction.LEFT;
 
     // Check analog sticks
     // Left stick is usually axes 0 (horizontal) and 1 (vertical)
@@ -290,10 +266,10 @@ export const GamepadProvider = ({
       const horizontalAxis = activeGamepad.axes[1].value;
       const verticalAxis = activeGamepad.axes[2].value;
 
-      if (verticalAxis < -AXIS_THRESHOLD) return Direction.DOWN;
-      if (horizontalAxis > AXIS_THRESHOLD) return Direction.RIGHT;
-      if (verticalAxis > AXIS_THRESHOLD) return Direction.UP;
-      if (horizontalAxis < -AXIS_THRESHOLD) return Direction.LEFT;
+      if (verticalAxis < -AXIS_THRESHOLD) return GamepadAction.DOWN;
+      if (horizontalAxis > AXIS_THRESHOLD) return GamepadAction.RIGHT;
+      if (verticalAxis > AXIS_THRESHOLD) return GamepadAction.UP;
+      if (horizontalAxis < -AXIS_THRESHOLD) return GamepadAction.LEFT;
     }
 
     return null;
@@ -318,8 +294,7 @@ export const GamepadProvider = ({
     connected,
     lastButtonPressed,
     isButtonPressed,
-    wasButtonJustPressed,
-    getDirectionPressed,
+    getActionPressed,
     axisValues,
     getButtonPressed,
   };
