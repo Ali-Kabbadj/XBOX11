@@ -94,7 +94,7 @@ export const Navigable: React.FC<NavigableProps> = ({
   const { registerItem, unregisterItem, isActive, isChildActive, focusItem } =
     useNavigation();
 
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement | null>(null);
   const registeredRef = useRef(false);
 
   // Register this item on mount
@@ -141,7 +141,7 @@ export const Navigable: React.FC<NavigableProps> = ({
 
   return (
     <div
-      ref={ref}
+      ref={ref ? ref : undefined}
       className={computedClassName}
       onClick={handleClick}
       data-navigable-id={id}
@@ -197,7 +197,7 @@ export const NavigationContainer: React.FC<StyledNavigationGroupProps> = ({
   parentId = null,
   children,
   className = "",
-  title = ""
+  title = "",
 }) => {
   return (
     <NavigationGroup

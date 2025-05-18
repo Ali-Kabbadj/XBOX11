@@ -31,4 +31,10 @@ export default defineConfig(async () => ({
       ignored: ["**/src-tauri/**"],
     },
   },
+  build: {
+    // Telling ESBuild/Vite that our output environment supports ES2022
+    target: "esnext",
+    // Or if we want to be explicit about browsers we could do:
+    // target: ["chrome100", "edge100", "firefox100", "safari15"]
+  },
 }));

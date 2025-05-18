@@ -13,7 +13,7 @@ import { useGamepad } from "./GamepadContext";
 // ======= Navigation Types =======
 export interface NavigationItem {
   id: string;
-  ref: RefObject<HTMLElement>;
+  ref: RefObject<HTMLElement | null>;
   parentId: string | null;
   children: string[];
   disabled: boolean;
@@ -24,7 +24,7 @@ export interface NavigationContextType {
   // Registration
   registerItem: (
     id: string,
-    ref: RefObject<HTMLElement>,
+    ref: RefObject<HTMLElement | null>,
     parentId: string | null,
     disabled?: boolean,
   ) => void;
@@ -108,7 +108,7 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({
   const registerItem = useCallback(
     (
       id: string,
-      ref: RefObject<HTMLElement>,
+      ref: RefObject<HTMLElement | null>,
       parentId: string | null = null,
       disabled: boolean = false,
     ) => {

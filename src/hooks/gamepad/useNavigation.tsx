@@ -1,6 +1,8 @@
-
 import { useGamepad } from "@/contexts/gamepad/GamepadContext";
-import { GamepadAction, useNavigation } from "@/contexts/gamepad/NavigationSystem";
+import {
+  GamepadAction,
+  useNavigation,
+} from "@/contexts/gamepad/NavigationSystem";
 import { useEffect, useCallback, useRef } from "react";
 
 interface UseNavigableOptionsProps {
@@ -25,7 +27,7 @@ export const useNavigable = (
   options: UseNavigableOptionsProps = {},
 ) => {
   const { registerItem, unregisterItem, isActive, focusItem } = useNavigation();
-  const { wasButtonJustPressed } = useGamepad();
+  const { isButtonPressed } = useGamepad();
 
   // Extract callback options
   const { onSelect, onBack, onMenu, onOption } = options;
@@ -47,22 +49,22 @@ export const useNavigable = (
     if (!isActive(id) || disabled) return;
 
     const handleButtonPress = () => {
-      if (wasButtonJustPressed(GamepadAction.SELECT) && onSelect) {
+      if (isButtonPressed(GamepadAction.SELECT) && onSelect) {
         onSelect();
         return true;
       }
 
-      if (wasButtonJustPressed(GamepadAction.BACK) && onBack) {
+      if (isButtonPressed(GamepadAction.BACK) && onBack) {
         onBack();
         return true;
       }
 
-      if (wasButtonJustPressed(GamepadAction.MENU) && onMenu) {
+      if (isButtonPressed(GamepadAction.MENU) && onMenu) {
         onMenu();
         return true;
       }
 
-      if (wasButtonJustPressed(GamepadAction.OPTION) && onOption) {
+      if (isButtonPressed(GamepadAction.OPTION) && onOption) {
         onOption();
         return true;
       }
@@ -71,16 +73,7 @@ export const useNavigable = (
     };
 
     handleButtonPress();
-  }, [
-    id,
-    disabled,
-    isActive,
-    wasButtonJustPressed,
-    onSelect,
-    onBack,
-    onMenu,
-    onOption,
-  ]);
+  }, [id, disabled, isActive, onSelect, onBack, onMenu, onOption]);
 
   // Convenient way to focus this item
   const focus = useCallback(() => {
