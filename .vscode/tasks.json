@@ -106,6 +106,24 @@
       "presentation": {
         "reveal": "always",
         "panel": "shared"
+      },
+      "dependsOn": ["Start React DevTools"]
+    },
+    {
+      "label": "Start React DevTools",
+      "type": "shell",
+      "command": "npx react-devtools",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "custom",
+        "pattern": {
+          "regexp": ".*"
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".",
+          "endsPattern": "."
+        }
       }
     }
   ]
