@@ -1,0 +1,53 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "ui:dev",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["dev"],
+      "isBackground": true,
+      "problemMatcher": [
+        {
+          "owner": "typescript",
+          "source": "vite-plugin-checker",
+          "applyTo": "allDocuments",
+          "fileLocation": ["absolute"],
+          "pattern": [
+            {
+              "regexp": "(ERROR|WARNING)\\(TypeScript\\)\\s+(.*)",
+              "severity": 1,
+              "message": 2
+            },
+            {
+              "regexp": "^ FILE\\s+(.*):(\\d+):(\\d+)$",
+              "file": 1,
+              "line": 2,
+              "column": 3
+            }
+          ],
+          "background": {
+            "activeOnStart": true,
+            "beginsPattern": "^",
+            "endsPattern": "^\\s*VITE v[\\d\\.]+\\s+ready in \\d+\\s?ms"
+          }
+        }
+      ]
+    },
+    {
+      "label": "core:buildDebug",
+      "type": "shell",
+      "command": "cargo",
+      "args": [
+        "build",
+        "--manifest-path=./src-tauri/Cargo.toml",
+        "--no-default-features"
+      ],
+      "problemMatcher": ["$rustc"]
+    },
+    {
+      "label": "ui:dev&core:buildDebug",
+      "dependsOn": ["core:buildDebug", "ui:dev"]
+    }
+  ]
+}

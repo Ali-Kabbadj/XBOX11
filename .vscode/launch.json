@@ -1,0 +1,31 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Tauri Core Development",
+      "env": { "RUST_LOG": "info" },
+      "cargo": {
+        "args": [
+          "build",
+          "--manifest-path=./src-tauri/Cargo.toml",
+          "--no-default-features"
+        ]
+      },
+      "preLaunchTask": "ui:dev",
+      // Use the VS Code Integrated Terminal for program I/O
+      "terminal": "integrated"
+    },
+    {
+      // this configuration works only on Windows
+      "name": "Tauri Frontend (Windows)",
+      "type": "msedge",
+      "request": "launch",
+      "runtimeExecutable": "${workspaceFolder}/src-tauri/target/debug/xbox11.exe",
+      "useWebView": true,
+      "webRoot": "${workspaceFolder}",
+      "preLaunchTask": "ui:dev&core:buildDebug"
+    }
+  ]
+}

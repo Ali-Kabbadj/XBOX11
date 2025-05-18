@@ -1,0 +1,6 @@
+{
+  "typescript.tsdk": "node_modules\\typescript\\lib",
+  "lldb.script": {
+    "lang.rust.toolchain": "stable-x86_64-pc-windows-gnu"
+  }
+}
